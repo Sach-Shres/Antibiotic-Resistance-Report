@@ -1,0 +1,163 @@
+---
+title: "ABRR"
+author: "Sachhyam Shrestha"
+date: "2025-10-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(wesanderson)
+```
+
+```{r init}
+
+e.coli <- data.frame(read_csv("antibiotic_res_data.csv"))
+
+b.sub <- read_csv("antibiotic_res_data(b_sub).csv")
+
+colnames(e.coli) <- c("Antibiotics", "ZOI (mm)")
+colnames(b.sub) <- c("Antibiotics", "ZOI (mm)")
+
+write.csv(e.coli, "v2/ecol.csv")
+write.csv(e.coli, "v2/bsub.csv")
+
+
+```
+
+```{r func}
+
+percent_inc <- function(old, new) {
+  result <- ((new - old) / old) * 100
+  return(result)
+}
+
+```
+
+```{r barp}
+
+ggplot(e.coli_SB, aes(x=Antibiotics, y=`ZOI (mm)`,fill=Type)) + geom_bar(stat="identity", width=0.5) + coord_flip() + ylab("ZOI (mm)") + xlab("Drugs") + geom_text(aes(label = `ZOI (mm)`), hjust=-0.1) + ylim(0,45) + theme_bw()  + labs(fill='Drugs') 
+ggsave("figure5.png", dpi=300) 
+
+ggplot(b.sub_SB, aes(x=Antibiotics, y=`ZOI (mm)`,fill=Type)) + geom_bar(stat="identity", width=0.5) + coord_flip() + ylab("ZOI (mm)") + xlab("Drugs") + geom_text(aes(label =`ZOI (mm)`), hjust=-0.1) + ylim(0,45) + theme_bw() + labs(fill='Drugs') 
+ggsave("figure6.png", dpi=300)
+
+
+```
+
+
+```{r ZOI barplots}
+
+ggplot(e.coli, aes(x=Antibiotics, y=`ZOI (mm)`,fill=Antibiotics)) + geom_bar(stat="identity", width=0.5) + coord_flip() + ylab("ZOI (mm)") + xlab("Antibiotic/ Antiseptic") + geom_text(aes(label = `ZOI (mm)`), hjust=-0.1) + ylim(0,45) + theme_bw() + scale_fill_brewer(palette = "Spectral")+ labs(fill='Antibiotic/ Antiseptic') 
+#ggsave("figure1.png", dpi=300)
+
+ggplot(b.sub, aes(x=Antibiotics, y=`ZOI (mm)`,fill=Antibiotics)) + geom_bar(stat="identity", width=0.5) + coord_flip() + ylab("ZOI (mm)") + xlab("Antibiotic/ Antiseptic") + geom_text(aes(label =`ZOI (mm)`), hjust=-0.1) + ylim(0,45) + theme_bw() + scale_fill_brewer(palette = "Spectral")+ labs(fill='Antibiotic/ Antiseptic') 
+#ggsave("figure2.png", dpi=300)
+
+```
+```{r ZOI boxplot SB}
+
+e.coli_SB <- e.coli %>% 
+  mutate(Type = ifelse(e.coli$Antibiotics == "Listerine" | e.coli$Antibiotics == "Pine Sol" | e.coli$Antibiotics == "Chlorox" | e.coli$Antibiotics == "Mrs. Meyer's", "Antiseptic", "Antibiotic"))
+
+b.sub_SB <- b.sub %>% 
+  mutate(Type = ifelse(b.sub$Antibiotics == "Listerine" | b.sub$Antibiotics == "Pine Sol" | b.sub$Antibiotics == "Chlorox" | b.sub$Antibiotics == "Mrs. Meyer's" | b.sub$Antibiotics == "Tom's of Maine", "Antiseptic", "Antibiotic"))
+
+
+e.coli_box <- e.coli_SB %>% 
+  group_by(Type) %>% summarise(Mean_ZOI = mean(`ZOI (mm)`), .groups='drop')
+
+b.sub_box <- b.sub_SB %>% 
+  group_by(Type) %>% summarise(Mean_ZOI = mean(`ZOI (mm)`), .groups='drop')
+
+ggplot(e.coli_SB, aes(x=Type, y=`ZOI (mm)`, group=Type)) + geom_point(aes(shape=Type, color=Type), size=4) + geom_hline(data = e.coli_box, aes(yintercept = Mean_ZOI, color = Type), linetype = "dashed") + theme_bw()  + geom_hline(yintercept = 14, color = "black") + scale_shape_manual(values=c(17, 16)) + scale_color_manual(values=c("#00BFc4","#F8766D"))
+ggsave("figure7.png", dpi=300)
+
+ggplot(b.sub_SB, aes(x=Type, y=`ZOI (mm)`, group=Type)) + geom_point(aes(shape=Type, color= Type), size=4) + geom_hline(data = b.sub_box, aes(yintercept = Mean_ZOI, color = Type), linetype = "dashed") + theme_bw() + geom_hline(yintercept = 14, color = "black") + scale_shape_manual(values=c(17, 16)) + scale_color_manual(values=c("#00BFc4","#F8766D"))
+ggsave("figure8.png", dpi=300)
+
+
+```
+```{r ZOI scatter SGPGN}
+
+e.coli_SB2 <- e.coli_SB %>% 
+  mutate(Type = case_when(
+    e.coli_SB$Antibiotics == "Penicillin" ~ "Gram +",
+    e.coli_SB$Antibiotics == "Amoxicillin" ~ "Gram +",
+    e.coli_SB$Antibiotics == "Cefazolin" ~ "Gram +",
+    e.coli_SB$Antibiotics == "Vancomycin" ~ "Gram +",
+    e.coli_SB$Antibiotics == "Gentamicin" ~ "Gram -",
+    e.coli_SB$Antibiotics == "Tetracycline" ~ "Gram -",
+    .default = "Antiseptic"))
+
+b.sub_SB2 <- b.sub_SB %>%
+  mutate(Type = case_when(
+    b.sub_SB$Antibiotics == "Penicillin" ~ "Gram +",
+    b.sub_SB$Antibiotics == "Amoxicillin" ~ "Gram +",
+    b.sub_SB$Antibiotics == "Cefazolin" ~ "Gram +",
+    b.sub_SB$Antibiotics == "Vancomycin" ~ "Gram +",
+    b.sub_SB$Antibiotics == "Gentamicin" ~ "Gram -",
+    b.sub_SB$Antibiotics == "Tetracycline" ~ "Gram -",
+    .default = "Antiseptic"))
+
+emean_SB2 <- e.coli_SB2 %>% 
+  group_by(Type) %>% summarise(Mean_ZOI = mean(`ZOI (mm)`), .groups='drop')
+
+bmean_SB2 <- b.sub_SB2 %>% 
+  group_by(Type) %>% summarise(Mean_ZOI = mean(`ZOI (mm)`), .groups='drop')
+
+ggplot(e.coli_SB2, aes(x=Type,y=`ZOI (mm)`, group=Type)) + geom_point(aes(shape=Type, color=Type), size=4) + geom_hline(data = emean_SB2, aes(yintercept = Mean_ZOI, color = Type), linetype = "dashed") + theme_bw()  + geom_hline(yintercept = 14, color = "black") + xlab("Drug Type") + labs(fill="Drug Type")
+#ggsave("figure3.png", dpi=300)
+
+ggplot(b.sub_SB2, aes(x=Type,y=`ZOI (mm)`, group=Type)) + geom_point(aes(shape=Type, color=Type), size=4) + geom_hline(data = bmean_SB2, aes(yintercept = Mean_ZOI, color = Type), linetype = "dashed") + theme_bw()  + geom_hline(yintercept = 14, color = "black") + xlab("Drug Type") + labs(fill="Drug Type")
+#ggsave("figure4.png", dpi=300)
+
+```
+```{r percent increases}
+
+eA <- emean_SB2$Mean_ZOI[emean_SB2$Type == "Antiseptic"]
+eP <- emean_SB2$Mean_ZOI[emean_SB2$Type == "Gram +"]
+eN <- emean_SB2$Mean_ZOI[emean_SB2$Type == "Gram -"]
+eB <- 
+
+bA <- bmean_SB2$Mean_ZOI[bmean_SB2$Type == "Antiseptic"]
+bP <- bmean_SB2$Mean_ZOI[bmean_SB2$Type == "Gram +"]
+bN <- bmean_SB2$Mean_ZOI[bmean_SB2$Type == "Gram -"]
+bB <- (bP + bN)/2
+
+# ON AVERAGE: 
+
+percent_inc(eP, eN)
+
+# gram - performed 38% better than gram + against E. coli
+
+percent_inc(bN, bP)
+
+# gram + performed 15% better than gram - against B. subtilis
+
+percent_inc(eP, bP)
+
+# gram + performed 131% better against B. subtilis than E. coli
+
+percent_inc(eN, bN)
+
+# gram - performed 46% better vs. B. subtilis than E. coli
+
+percent_inc(eA, eB)
+
+# Antibiotics performed 91% better than Antiseptics vs. E. coli
+
+percent_inc(bA, bB)
+
+# Antibiotics performed 68% better than Antiseptics vs. B. subtilis
+
+
+```
+
+```{r}
+eP
+bP
+
+```
+
